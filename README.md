@@ -2,7 +2,7 @@
 
 ## Grafana
 
-Grafana is used to visualize the data posted to the InfluxDB.
+[Grafana](http://grafana.org/) is used to visualize the data posted to InfluxDB.
 
 Setting up Grafana locally is pretty straightforward, but for our purposes this assumes you have an Influx database ready to go against. But if you don't and want something to play with, you'll need to set it up for yourself:
 
