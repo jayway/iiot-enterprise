@@ -8,7 +8,6 @@
 (defn get-raw-bytes [byte-buffer]
   (let [b (byte-array (.remaining byte-buffer))]
     (.get byte-buffer b)
-    (log/info "string:" (String. b))
     (json/parse-string (String. b) true)))
 
 (defn process-records [database records]
@@ -17,7 +16,9 @@
     (let [{{:keys [tag metric installationId] :as data} :data} record]
       (log/info (.getName (Thread/currentThread)) "Received data:" data)
       (if (and installationId tag metric)
-        (db/upsert-tag database installationId tag metric)
+        (do
+          (db/put-cloudwatch-metric database data)
+          #_(db/put-influx-metric database data))
         (log/warn (.getName (Thread/currentThread)) "missing installationId, tag and/or metric, ignoring")))))
 
 (defn start-workers [database conf]
@@ -39,15 +40,16 @@
 (defrecord TagCollector [conf database workers]
   component/Lifecycle
   (start [component]
-         (log/info "Starting TagCounter Component")
-         (let [workers (start-workers database conf)]
+         (log/info "Starting TagCollector Component")
+         (let [workers (start-workers database (:aws-conf conf))]
            (assoc component :workers workers)))
   (stop [component]
-        (log/info "Stopping TagCounter Component")
+        (log/info "Stopping TagCollector Component")
         (doseq [[w uuid] workers]
           (log/info "Shutting down worker" uuid)
           (.shutdown w))
         (assoc component :workers nil)))
 
 (defn new-tagcollector [conf]
+  (log/info "conf:" conf)
   (map->TagCollector {:conf conf}))

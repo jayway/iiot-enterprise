@@ -14,7 +14,9 @@
                  [joda-time "2.7"]
                  [clj-pid "0.1.2"]
                  [ch.qos.logback/logback-classic "1.1.3"]
-                 [environ "1.0.0"]]
+                 [environ "1.0.0"]
+                 [capacitor "0.4.2"]
+                 [clj-time "0.8.0"]]
   :plugins [[lein-environ "1.0.0"]]
   :main ^:skip-aot kinesis-client.main
   :target-path "target/%s"

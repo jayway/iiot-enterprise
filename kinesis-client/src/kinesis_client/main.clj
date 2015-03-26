@@ -20,7 +20,15 @@
 
 (def main-conf {:pidfile-name (env :pidfile-name)})
 
+(def influx-conf {:host (env :influx-host)
+                  :port (env :influx-port)
+                  :scheme (env :influx-scheme)
+                  :username (env :influx-username)
+                  :password (env :influx-password)
+                  :database (env :influx-database)})
+
 (def conf {:aws-conf aws-conf
+           :influx-conf influx-conf
            :main-conf main-conf})
 
 (defn get-system [conf]
@@ -28,7 +36,9 @@
   will bring up the individual components in the correct order."
   (component/system-map
    :db            (database/new-database (:aws-conf conf))
-   :tagcollector  (component/using (tagcollector/new-tagcollector (:aws-conf conf)) {:database :db})))
+   :tagcollector  (component/using (tagcollector/new-tagcollector
+                                     (select-keys conf [:aws-conf :influx-conf]))
+                                   {:database :db})))
 
 (def system (get-system conf))
 
