@@ -24,8 +24,10 @@ function sendToCloudWatch(items, callback) {
         MetricData: metrics,
         Namespace: 'Team Enterprise'
     };
+    console.log('Sending to cloudwatch!');
     var cloudwatch = new aws.CloudWatch();
     cloudwatch.putMetricData(params, function(err, data) {
+       console.log('cloudwatch response!');
         if (err) console.log(err, err.stack);
         else     console.log(data);
         return callback(err, data);
@@ -37,16 +39,28 @@ function sendToInflux(items, callback) {
     var dbInflux = influx({
         host : 'sandbox.influxdb.com',
         port : 8086,
-        username : 'jlowgren',
-        password : 'u#icel4G$1IwM53i',
-        database : 'iiot_enterprise_db'
+        username : 'enterprise',
+        password : 'x3li01-XWs[e3WAp',
+        database : 'team_enterprise_db'
     });
-    var series =  {
-        metrics: items
-    };
+    console.log('Preparing data for influx');
+    var series = items.reduce(function(result, current) {
+      var series = "lambda."+current.installationId;
+      console.log('adding to', series);
+      if (!(series in result)) {
+        result[series] = [];
+      }
+      result[series].push(current);
+      return result;
+    }, {}); 
+    console.log('Sending to influx', series);
     var options = {}
-    console.log('Sending to influx', series, options);
-    dbInflux.writeSeries(series, options, callback);
+    dbInflux.writeSeries(series, options, function(err, data) {
+       console.log('influx response!');
+        if (err) console.log(err, err.stack);
+        else     console.log(data);
+        return callback(err, data);
+    });
 }
 
 function processMetrics(data, callback) {
@@ -64,8 +78,12 @@ processMetrics.handler = function(event, context) {
         var payload = new Buffer(encodedPayload, 'base64').toString('utf8');
         console.log("Decoded payload: " + payload);
         var item = JSON.parse(payload);
-        if (item.tag && item.metric)
+        console.log("json:" + item);
+        if (item.installationId && item.tag && item.metric) {
             items.push(item);
+        } else {
+          console.log("Ignoring incorrect json");
+        }
     }
     processMetrics(items, function(err, result) {
         context.done(err, JSON.stringify(result, null, 2));
